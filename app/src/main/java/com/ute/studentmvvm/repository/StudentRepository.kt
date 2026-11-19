@@ -20,7 +20,11 @@ class StudentRepository(
     suspend fun syncFromCloud(): Result<Int> {
         return try {
             val remoteList = apiService.getStudents()
-            val entities = remoteList.map { it.toEntity() }
+            val entities = remoteList.map { dto ->
+                val entity = dto.toEntity()
+                val existing = studentDao.getStudentByCode(entity.studentCode)
+                if (existing != null) entity.copy(id = existing.id) else entity
+            }
             studentDao.insertAll(entities)
             Result.success(entities.size)
         } catch (e: Exception) {
